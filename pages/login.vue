@@ -37,6 +37,14 @@ const error = ref('')
 const { onLogin } = useApollo()
 const router = useRouter()
 
+// Cookie read by middleware/auth.global.ts
+const authToken = useCookie('apollo:default.token', {
+  maxAge: 60 * 60 * 24 * 7,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  path: '/'
+})
+
 const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password)
@@ -53,15 +61,17 @@ async function handleLogin() {
   
   try {
     const result = await loginMutate({ email: email.value, password: password.value })
-    if (result?.data?.login) {
-      // Save token (default nuxt-apollo behavior via onLogin)
-      await onLogin(result.data.login)
-      router.push('/')
+    const token = result?.data?.login
+    if (token) {
+      // Persist the token explicitly so the global middleware sees it
+      authToken.value = token
+      await onLogin(token)
+      await router.push('/')
     } else {
       error.value = 'Identifiants invalides'
     }
   } catch (e) {
-    error.value = 'Erreur de connexion : ' + e.message
+    error.value = 'Erreur de connexion : ' + (e?.message || 'inconnue')
     console.error(e)
   } finally {
     loading.value = false
