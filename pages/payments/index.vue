@@ -47,8 +47,8 @@ const columns = [
   { key: 'user', label: 'Utilisateur' },
   { key: 'amount', label: 'Montant' },
   { key: 'provider', label: 'Méthode' },
-  { key: 'status', label: 'Statut' }
-]
+  { key: 'status', label: 'Statut' },
+];
 
 const query = gql`
   query GetPayments {
@@ -64,56 +64,56 @@ const query = gql`
       }
     }
   }
-`
+`;
 
-const { data, pending, refresh } = await useAsyncQuery(query)
-const payments = computed(() => data.value?.payments || [])
+const { data, pending, refresh } = await useAsyncQuery(query);
+const payments = computed(() => data.value?.payments || []);
 
-const totalVolume = computed(() => 
+const totalVolume = computed(() =>
   payments.value
-    .filter(p => p.status === 'SUCCESSFUL')
-    .reduce((acc, p) => acc + p.amount, 0)
-)
+    .filter((p) => p.status === 'SUCCESSFUL')
+    .reduce((acc, p) => acc + Number(p.amount || 0), 0)
+);
 
-const wassiCommission = computed(() => totalVolume.value * 0.2) // Assume 20%
+const wassiCommission = computed(() => totalVolume.value * 0.2);
 
 const recentTransactionsCount = computed(() => {
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-  return payments.value.filter(p => new Date(p.createdAt) > yesterday).length
-})
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  return payments.value.filter((p) => new Date(p.createdAt) > yesterday).length;
+});
 
 function statusColor(status) {
   switch (status) {
-    case 'SUCCESSFUL': return 'green'
-    case 'PENDING': return 'orange'
-    case 'FAILED': return 'red'
-    default: return 'gray'
+    case 'SUCCESSFUL': return 'green';
+    case 'PENDING': return 'orange';
+    case 'FAILED': return 'red';
+    default: return 'gray';
   }
 }
 
 function exportToCsv() {
-  const data = payments.value
-  if (!data.length) return
+  const rows = payments.value;
+  if (!rows.length) return;
 
-  const headers = ['Date', 'Utilisateur', 'Montant', 'Provider', 'Statut']
-  const rows = data.map(p => [
+  const headers = ['Date', 'Utilisateur', 'Montant', 'Provider', 'Statut'];
+  const values = rows.map((p) => [
     new Date(p.createdAt).toLocaleDateString(),
     `${p.user.firstName} ${p.user.lastName}`,
     p.amount,
     p.provider,
-    p.status
-  ])
+    p.status,
+  ]);
 
-  let csvContent = "data:text/csv;charset=utf-8," 
-    + headers.join(",") + "\n"
-    + rows.map(r => r.join(",")).join("\n")
+  const csvContent = 'data:text/csv;charset=utf-8,'
+    + headers.join(',') + '\n'
+    + values.map((r) => r.join(',')).join('\n');
 
-  const encodedUri = encodeURI(csvContent)
-  const link = document.createElement("a")
-  link.setAttribute("href", encodedUri)
-  link.setAttribute("download", `wassi_paiements_${new Date().toISOString().split('T')[0]}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `wassi_paiements_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 </script>
