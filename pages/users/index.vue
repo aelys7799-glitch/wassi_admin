@@ -310,6 +310,7 @@ async function handleSubmitUser() {
 async function handleResetPassword() {
   if (!passwordForm.value.newPassword) return;
   submitting.value = true;
+
   try {
     await resetPassMutate({
       id: selectedUser.value.id,
@@ -341,6 +342,7 @@ async function toggleStatus(user) {
 
 async function handleDelete(user) {
   if (!confirm(`Supprimer définitivement ${user.firstName} ${user.lastName} ?`)) return;
+
   try {
     await deleteMutate({ id: user.id });
     toast.add({ title: 'Utilisateur supprimé', color: 'green' });
